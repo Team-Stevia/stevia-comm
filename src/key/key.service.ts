@@ -37,7 +37,7 @@ export class KeyService {
     });
 
     return {
-      "door_status": DOOR_STATUS.OPEN,
+      "door_status": false,
     };
   }
 
@@ -61,8 +61,20 @@ export class KeyService {
     });
 
     return {
-      "door_status": DOOR_STATUS.CLOSE,
+      "door_status": true,
     };
+  }
+
+  async doorStatus(rfidSerialNo: string) {
+    const doorStatus = await this.checkDoorStatus(rfidSerialNo);
+
+    if (doorStatus === DOOR_STATUS.CLOSE) {
+      return false;
+    }
+
+    if (doorStatus === DOOR_STATUS.OPEN) {
+      return true;
+    }
   }
 
   async findKey(roomNo: number, buildingLocation: string): Promise<string> {
@@ -101,5 +113,25 @@ export class KeyService {
     }
 
     return keyStatus.keyStatus;
+  }
+
+  async checkDoorStatus(rfidSerialNo: string) {
+    const keyStatus = await prisma.status.findFirst({
+      where: {
+        rfidSerialNo: rfidSerialNo,
+      },
+      orderBy: {
+        createdAt: "desc",
+      },
+      select: {
+        doorStatus: true,
+      },
+    });
+
+    if (!keyStatus) {
+      throw new NotFoundException("Door Status Check Error");
+    }
+
+    return keyStatus.doorStatus;
   }
 }
