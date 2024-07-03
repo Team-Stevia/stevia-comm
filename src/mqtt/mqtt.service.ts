@@ -4,6 +4,7 @@ import { MqttClient, connect } from "mqtt";
 @Injectable()
 export class MqttService {
   public readonly mqtt: MqttClient;
+  public message: string;
 
   constructor() {
     this.mqtt = connect("mqtt://broker.emqx.io:1883", {
@@ -26,6 +27,7 @@ export class MqttService {
     this.mqtt.on("message", (topic, message) => {
       const messageContent = message.toString();
       console.info(`Received message on topic '${topic}': ${messageContent}`);
+      this.message = messageContent;
     });
 
     this.mqtt.on("error", (err) => {
@@ -51,5 +53,9 @@ export class MqttService {
         }
       });
     });
+  }
+
+  async getMessage(): Promise<string> {
+    return this.message;
   }
 }

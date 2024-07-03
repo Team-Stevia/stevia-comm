@@ -12,9 +12,9 @@ const prisma = new PrismaClient();
 
 @Injectable()
 export class KeyService {
-  async takeKey(
+  async checkDatabaseBeforeTakeKey(
     takeKeyRequestDto: TakeKeyRequestDto,
-  ): Promise<TakeKeyResponseDto> {
+  ): Promise<void> {
     const rfidSerialNo = await this.findKey(
       takeKeyRequestDto.room_no,
       takeKeyRequestDto.building_location,
@@ -25,8 +25,15 @@ export class KeyService {
     if (keyStatus === KEY_STATUS.NOT_EXIST) {
       throw new NotFoundException("Key Not Exist");
     }
+  }
 
-    console.info("DOOR OPEN 진행 [MQTT]");
+  async takeKeyUpdateDb(
+    takeKeyRequestDto: TakeKeyRequestDto,
+  ): Promise<TakeKeyResponseDto> {
+    const rfidSerialNo = await this.findKey(
+      takeKeyRequestDto.room_no,
+      takeKeyRequestDto.building_location,
+    );
 
     await prisma.status.create({
       data: {
@@ -41,33 +48,26 @@ export class KeyService {
     };
   }
 
-  async dropKey(
+  async dropKeyExistCheck(
     dropKeyRequestDto: DropKeyRequestDto,
-  ): Promise<DropKeyResponseDto> {
+    scannedRfidSerialNo: string,
+  ): Promise<void> {
     const rfidSerialNo = await this.findKey(
       dropKeyRequestDto.room_no,
       dropKeyRequestDto.building_location,
     );
 
-    console.info("DB의 Key 상태 최신화 [MQTT]");
-
-    const keyStatus = await this.checkDBKeyStatus(rfidSerialNo);
-
-    if (keyStatus === KEY_STATUS.NOT_EXIST) {
-      throw new NotFoundException("Key Not Exist");
+    if (scannedRfidSerialNo !== rfidSerialNo) {
+      throw new NotFoundException("Wrong Key Exists");
     }
+  }
 
-    console.info("DB의 Door 상태를 최신 [MQTT]");
-
-    const doorStatus = await this.checkDBDoorStatus(rfidSerialNo);
-
-    if (doorStatus === DOOR_STATUS.OPEN) {
-      throw new NotFoundException("Door Not Closed");
-    }
-
+  async dropKeyUpdateDb(
+    scannedRfidSerialNo: string,
+  ): Promise<DropKeyResponseDto> {
     await prisma.status.create({
       data: {
-        rfidSerialNo: rfidSerialNo,
+        rfidSerialNo: scannedRfidSerialNo,
         keyStatus: KEY_STATUS.EXIST,
         doorStatus: DOOR_STATUS.CLOSE,
       },
