@@ -1,5 +1,6 @@
 import { Injectable, NotFoundException } from "@nestjs/common";
 import { PrismaClient } from "@prisma/client";
+import { MqttClient, connect } from "mqtt";
 import { DOOR_STATUS } from "./dtos/door.status.enum";
 import { DropKeyRequestDto } from "./dtos/drop-key.request.dto";
 import { DropKeyResponseDto } from "./dtos/drop-key.response.dto";
@@ -12,9 +13,64 @@ const prisma = new PrismaClient();
 
 @Injectable()
 export class KeyService {
-  async takeKey(
+  public readonly mqtt: MqttClient;
+  private message: string;
+
+  constructor() {
+    this.mqtt = connect("mqtt://broker.emqx.io:1883", {
+      clientId: "steviaMqttClient",
+      connectTimeout: 5000,
+    });
+
+    this.mqtt.on("connect", () => {
+      console.info("Connected to MQTT broker");
+      this.mqtt.subscribe("stevia-mqtt/hbnu/response/+", (err) => {
+        if (err) {
+          console.error(`Failed to subscribe: ${err.message}`);
+        } else {
+          console.info("Subscribed to topic: stevia-mqtt/hbnu/response/+");
+        }
+      });
+    });
+
+    this.mqtt.on("message", (topic, message) => {
+      const messageContent = message.toString();
+      console.info(`Received message on topic '${topic}': ${messageContent}`);
+      this.message = messageContent;
+    });
+
+    this.mqtt.on("error", (err) => {
+      console.error(`MQTT error: ${err.message}`);
+    });
+
+    this.mqtt.on("offline", () => {
+      console.info("MQTT client went offline");
+    });
+
+    this.mqtt.on("reconnect", () => {
+      console.info("Reconnecting to MQTT broker");
+    });
+  }
+
+  async publish(topic: string, payload: string): Promise<string> {
+    return new Promise((resolve, reject) => {
+      this.mqtt.publish(topic, payload, (err) => {
+        if (err) {
+          reject(`Failed to publish message: ${err.message}`);
+        } else {
+          resolve(payload);
+        }
+      });
+    });
+  }
+
+  async getMessage(): Promise<string> {
+    return this.message;
+  }
+
+  async checkDatabaseBeforeTakeKey(
     takeKeyRequestDto: TakeKeyRequestDto,
-  ): Promise<TakeKeyResponseDto> {
+  ): Promise<void> {
     const rfidSerialNo = await this.findKey(
       takeKeyRequestDto.room_no,
       takeKeyRequestDto.building_location,
@@ -25,8 +81,15 @@ export class KeyService {
     if (keyStatus === KEY_STATUS.NOT_EXIST) {
       throw new NotFoundException("Key Not Exist");
     }
+  }
 
-    console.info("DOOR OPEN 진행 [MQTT]");
+  async takeKeyUpdateDb(
+    takeKeyRequestDto: TakeKeyRequestDto,
+  ): Promise<TakeKeyResponseDto> {
+    const rfidSerialNo = await this.findKey(
+      takeKeyRequestDto.room_no,
+      takeKeyRequestDto.building_location,
+    );
 
     await prisma.status.create({
       data: {
@@ -41,33 +104,26 @@ export class KeyService {
     };
   }
 
-  async dropKey(
+  async dropKeyExistCheck(
     dropKeyRequestDto: DropKeyRequestDto,
-  ): Promise<DropKeyResponseDto> {
+    scannedRfidSerialNo: string,
+  ): Promise<void> {
     const rfidSerialNo = await this.findKey(
       dropKeyRequestDto.room_no,
       dropKeyRequestDto.building_location,
     );
 
-    console.info("DB의 Key 상태 최신화 [MQTT]");
-
-    const keyStatus = await this.checkDBKeyStatus(rfidSerialNo);
-
-    if (keyStatus === KEY_STATUS.NOT_EXIST) {
-      throw new NotFoundException("Key Not Exist");
+    if (scannedRfidSerialNo.trim() !== rfidSerialNo) {
+      throw new NotFoundException("Wrong Key Exists");
     }
+  }
 
-    console.info("DB의 Door 상태를 최신 [MQTT]");
-
-    const doorStatus = await this.checkDBDoorStatus(rfidSerialNo);
-
-    if (doorStatus === DOOR_STATUS.OPEN) {
-      throw new NotFoundException("Door Not Closed");
-    }
-
+  async dropKeyUpdateDb(
+    scannedRfidSerialNo: string,
+  ): Promise<DropKeyResponseDto> {
     await prisma.status.create({
       data: {
-        rfidSerialNo: rfidSerialNo,
+        rfidSerialNo: scannedRfidSerialNo.trim(),
         keyStatus: KEY_STATUS.EXIST,
         doorStatus: DOOR_STATUS.CLOSE,
       },
@@ -99,7 +155,7 @@ export class KeyService {
   async findKey(roomNo: number, buildingLocation: string): Promise<string> {
     const rfidSerialNo = await prisma.key.findFirst({
       where: {
-        roomNo: roomNo,
+        roomNo: Number(roomNo),
         buildingLocation: buildingLocation,
       },
       select: {
