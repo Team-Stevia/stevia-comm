@@ -2,10 +2,9 @@ import { Module } from "@nestjs/common";
 import { AppController } from "./app.controller";
 import { AppService } from "./app.service";
 import { KeyModule } from "./key/key.module";
-import { MqttModule } from "./mqtt/mqtt.module";
 
 @Module({
-  imports: [KeyModule, MqttModule],
+  imports: [KeyModule],
   controllers: [AppController],
   providers: [AppService],
 })
