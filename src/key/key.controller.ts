@@ -7,6 +7,7 @@ import {
   NotFoundException,
   Param,
   Post,
+  Query,
 } from "@nestjs/common";
 import { DropKeyRequestDto } from "./dtos/drop-key.request.dto";
 import { DropKeyResponseDto } from "./dtos/drop-key.response.dto";
@@ -19,12 +20,13 @@ import { KeyService } from "./key.service";
 export class KeyController {
   constructor(private readonly keyService: KeyService) {}
 
-  @Get("/keys/:reserve-id")
+  @Get("/keys")
   async keyStatus(
-    @Param("reserve-id") reserveId: string,
+    @Query("roomNo") roomNo: string,
+    @Query("buildingLocation") buildingLocation: string,
   ): Promise<KeyStatusResponseDto> {
     try {
-      return await this.keyService.keyStatus(reserveId);
+      return await this.keyService.keyStatus(roomNo, buildingLocation);
     } catch (error) {
       throw new HttpException(error.message, HttpStatus.NOT_FOUND);
     }
