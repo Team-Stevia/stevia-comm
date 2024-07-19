@@ -1,3 +1,3 @@
 export class KeyStatusResponseDto {
-  key_status: boolean;
+  image_status: boolean;
 }

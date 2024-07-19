@@ -100,7 +100,7 @@ export class KeyService {
     });
 
     return {
-      "door_status": false,
+      image_status: false,
     };
   }
 
@@ -130,22 +130,27 @@ export class KeyService {
     });
 
     return {
-      "door_status": true,
+      image_status: true,
     };
   }
 
-  async keyStatus(rfidSerialNo: string): Promise<KeyStatusResponseDto> {
+  async keyStatus(
+    roomNo: string,
+    buildingLocation: string,
+  ): Promise<KeyStatusResponseDto> {
+    const rfidSerialNo = await this.findKey(Number(roomNo), buildingLocation);
+
     const keyStatus = await this.checkDBKeyStatus(rfidSerialNo);
 
     if (keyStatus === KEY_STATUS.NOT_EXIST) {
       return {
-        key_status: false,
+        image_status: false,
       };
     }
 
     if (keyStatus === KEY_STATUS.EXIST) {
       return {
-        key_status: true,
+        image_status: true,
       };
     }
 
@@ -155,7 +160,7 @@ export class KeyService {
   async findKey(roomNo: number, buildingLocation: string): Promise<string> {
     const rfidSerialNo = await prisma.key.findFirst({
       where: {
-        roomNo: Number(roomNo),
+        roomNo: roomNo,
         buildingLocation: buildingLocation,
       },
       select: {

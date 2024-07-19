@@ -5,8 +5,8 @@ import {
   HttpException,
   HttpStatus,
   NotFoundException,
-  Param,
   Post,
+  Query,
 } from "@nestjs/common";
 import { DropKeyRequestDto } from "./dtos/drop-key.request.dto";
 import { DropKeyResponseDto } from "./dtos/drop-key.response.dto";
@@ -19,12 +19,13 @@ import { KeyService } from "./key.service";
 export class KeyController {
   constructor(private readonly keyService: KeyService) {}
 
-  @Get("/keys/:reserve-id")
+  @Get("/keys")
   async keyStatus(
-    @Param("reserve-id") reserveId: string,
+    @Query("roomNo") roomNo: string,
+    @Query("buildingLocation") buildingLocation: string,
   ): Promise<KeyStatusResponseDto> {
     try {
-      return await this.keyService.keyStatus(reserveId);
+      return await this.keyService.keyStatus(roomNo, buildingLocation);
     } catch (error) {
       throw new HttpException(error.message, HttpStatus.NOT_FOUND);
     }
@@ -65,7 +66,7 @@ export class KeyController {
 
       await this.keyService.publish("stevia-mqtt/hbnu/request/door", "req");
 
-      await new Promise((resolve) => setTimeout(resolve, 1000));
+      await new Promise((resolve) => setTimeout(resolve, 3000));
 
       const doorStatusMessage: string = await this.keyService.getMessage();
 
