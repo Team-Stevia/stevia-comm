@@ -5,7 +5,6 @@ import {
   HttpException,
   HttpStatus,
   NotFoundException,
-  Param,
   Post,
   Query,
 } from "@nestjs/common";
@@ -67,7 +66,7 @@ export class KeyController {
 
       await this.keyService.publish("stevia-mqtt/hbnu/request/door", "req");
 
-      await new Promise((resolve) => setTimeout(resolve, 1000));
+      await new Promise((resolve) => setTimeout(resolve, 3000));
 
       const doorStatusMessage: string = await this.keyService.getMessage();
 

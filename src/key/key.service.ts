@@ -100,7 +100,7 @@ export class KeyService {
     });
 
     return {
-      "door_status": false,
+      image_status: false,
     };
   }
 
@@ -130,7 +130,7 @@ export class KeyService {
     });
 
     return {
-      "door_status": true,
+      image_status: true,
     };
   }
 
