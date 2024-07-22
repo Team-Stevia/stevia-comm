@@ -37,7 +37,10 @@ export class KeyController {
   ): Promise<TakeKeyResponseDto> {
     try {
       await this.keyService.checkDatabaseBeforeTakeKey(takeKeyRequestDto);
-      await this.keyService.publish("stevia-mqtt/hbnu/request/lock", "on");
+      await this.keyService.publish(
+        `stevia-mqtt/hbnu/request/lock/${takeKeyRequestDto.building_location}${takeKeyRequestDto.room_no}`,
+        "on",
+      );
       return await this.keyService.takeKeyUpdateDb(takeKeyRequestDto);
     } catch (error) {
       throw new HttpException(error.message, HttpStatus.NOT_FOUND);
@@ -49,7 +52,10 @@ export class KeyController {
     @Body() dropKeyRequestDto: DropKeyRequestDto,
   ): Promise<DropKeyResponseDto> {
     try {
-      await this.keyService.publish("stevia-mqtt/hbnu/request/key", "req");
+      await this.keyService.publish(
+        `stevia-mqtt/hbnu/request/key/${dropKeyRequestDto.building_location}${dropKeyRequestDto.room_no}`,
+        "req",
+      );
 
       // message 수신을 위한 delay 추가
       await new Promise((resolve) => setTimeout(resolve, 1000));
@@ -64,7 +70,10 @@ export class KeyController {
 
       await this.keyService.dropKeyExistCheck(dropKeyRequestDto, rfidSerialNo);
 
-      await this.keyService.publish("stevia-mqtt/hbnu/request/door", "req");
+      await this.keyService.publish(
+        `stevia-mqtt/hbnu/request/door/${dropKeyRequestDto.building_location}${dropKeyRequestDto.room_no}`,
+        "req",
+      );
 
       await new Promise((resolve) => setTimeout(resolve, 3000));
 

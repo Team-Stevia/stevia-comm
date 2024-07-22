@@ -24,11 +24,11 @@ export class KeyService {
 
     this.mqtt.on("connect", () => {
       console.info("Connected to MQTT broker");
-      this.mqtt.subscribe("stevia-mqtt/hbnu/response/+", (err) => {
+      this.mqtt.subscribe("stevia-mqtt/hbnu/response/#", (err) => {
         if (err) {
           console.error(`Failed to subscribe: ${err.message}`);
         } else {
-          console.info("Subscribed to topic: stevia-mqtt/hbnu/response/+");
+          console.info("Subscribed to topic: stevia-mqtt/hbnu/response/#");
         }
       });
     });
@@ -138,7 +138,7 @@ export class KeyService {
     roomNo: string,
     buildingLocation: string,
   ): Promise<KeyStatusResponseDto> {
-    const rfidSerialNo = await this.findKey(Number(roomNo), buildingLocation);
+    const rfidSerialNo = await this.findKey(roomNo, buildingLocation);
 
     const keyStatus = await this.checkDBKeyStatus(rfidSerialNo);
 
@@ -157,10 +157,10 @@ export class KeyService {
     throw new NotFoundException("Key Status Check Error");
   }
 
-  async findKey(roomNo: number, buildingLocation: string): Promise<string> {
+  async findKey(roomNo: string, buildingLocation: string): Promise<string> {
     const rfidSerialNo = await prisma.key.findFirst({
       where: {
-        roomNo: roomNo,
+        roomNo: Number(roomNo),
         buildingLocation: buildingLocation,
       },
       select: {
