@@ -18,7 +18,6 @@ export class KeyService {
 
   constructor() {
     this.mqtt = connect("mqtt://broker.emqx.io:1883", {
-      clientId: "steviaMqttClient",
       connectTimeout: 5000,
     });
 
