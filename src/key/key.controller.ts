@@ -31,11 +31,8 @@ export class KeyController {
     }
   }
 
-<<<<<<< HEAD
-  @Post("/keys/take-key")
-=======
+
   @Post("/take-key")
->>>>>>> main
   async takeKey(
     @Body() takeKeyRequestDto: TakeKeyRequestDto,
   ): Promise<TakeKeyResponseDto> {
