@@ -21,9 +21,11 @@
   },
   "dependencies": {
     "@nestjs/common": "^9.0.0",
+    "@nestjs/config": "^3.3.0",
     "@nestjs/core": "^9.0.0",
     "@nestjs/platform-express": "^9.0.0",
     "@prisma/client": "^5.15.0",
+    "cross-env": "^7.0.3",
     "mqtt": "^5.7.3",
     "prisma": "^5.15.0",
     "reflect-metadata": "^0.1.13",
