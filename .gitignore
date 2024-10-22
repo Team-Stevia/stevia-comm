@@ -293,5 +293,3 @@ fabric.properties
 
 # End of https://www.toptal.com/developers/gitignore/api/Macos,Webstorm,NestJS,Node
 
-# Prisma
-/prisma
