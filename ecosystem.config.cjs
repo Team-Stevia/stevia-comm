@@ -1,7 +1,7 @@
 module.exports = {
   apps: [{
     name: "comm",
-    script: "main.ts",
-    interpreter: "/home/wisoft/.asdf/shims/pnpm",
+    script: "run.sh",
+    interpreter: "/home/wisoft/.nvm/versions/node/v20.11.0/bin/pnpm",
   }],
 }
